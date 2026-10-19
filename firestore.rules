@@ -1,0 +1,123 @@
+rules_version = '2';
+
+service cloud.firestore {
+  match /databases/{database}/documents {
+
+    // Helper functions
+    function isAuthenticated() {
+      return request.auth != null;
+    }
+
+
+    function isDocOwner() {
+      return isAuthenticated() && resource.data.userId == request.auth.uid;
+    }
+
+    function willBeDocOwner() {
+      return isAuthenticated() && request.resource.data.userId == request.auth.uid;
+    }
+
+    function preservesDocOwnership() {
+      return request.resource.data.userId == resource.data.userId;
+    }
+
+    function isValidImportance(imp) {
+      return imp in ['must_have', 'high', 'medium', 'low'];
+    }
+
+    function isValidPreferenceStatus(status) {
+      return status in ['active', 'reconsider', 'archived'];
+    }
+
+    function isValidPlanStatus(status) {
+      return status in ['active', 'completed', 'archived'];
+    }
+
+    // Memories Collection
+    match /memories/{memoryId} {
+      allow read: if isDocOwner();
+      
+      allow create: if willBeDocOwner()
+        && request.resource.data.content is string
+        && request.resource.data.content.size() > 0
+        && request.resource.data.content.size() <= 10000
+        && request.resource.data.tags is list;
+
+      allow update: if isDocOwner()
+        && preservesDocOwnership()
+        && request.resource.data.content is string
+        && request.resource.data.content.size() > 0
+        && request.resource.data.content.size() <= 10000
+        && request.resource.data.tags is list;
+
+      allow delete: if isDocOwner();
+    }
+
+    // Preferences Collection
+    match /preferences/{preferenceId} {
+      allow read: if isDocOwner();
+
+      allow create: if willBeDocOwner()
+        && request.resource.data.title is string
+        && request.resource.data.title.size() > 0
+        && request.resource.data.title.size() <= 200
+        && isValidImportance(request.resource.data.importance)
+        && isValidPreferenceStatus(request.resource.data.status)
+        && request.resource.data.supportingMemoryIds is list;
+
+      allow update: if isDocOwner()
+        && preservesDocOwnership()
+        && request.resource.data.title is string
+        && request.resource.data.title.size() > 0
+        && request.resource.data.title.size() <= 200
+        && isValidImportance(request.resource.data.importance)
+        && isValidPreferenceStatus(request.resource.data.status)
+        && request.resource.data.supportingMemoryIds is list;
+
+      allow delete: if isDocOwner();
+    }
+
+    // Plans Collection
+    match /plans/{planId} {
+      allow read: if isDocOwner();
+
+      allow create: if willBeDocOwner()
+        && request.resource.data.title is string
+        && request.resource.data.title.size() > 0
+        && request.resource.data.title.size() <= 200
+        && isValidPlanStatus(request.resource.data.status);
+
+      allow update: if isDocOwner()
+        && preservesDocOwnership()
+        && request.resource.data.title is string
+        && request.resource.data.title.size() > 0
+        && request.resource.data.title.size() <= 200
+        && isValidPlanStatus(request.resource.data.status);
+
+      allow delete: if isDocOwner();
+    }
+
+    // Plan Items Collection
+    match /planItems/{planItemId} {
+      allow read: if isDocOwner();
+
+      allow create: if willBeDocOwner()
+        && request.resource.data.planId is string
+        && request.resource.data.preferenceId is string
+        && isValidImportance(request.resource.data.importance)
+        && request.resource.data.checked is bool;
+
+      allow update: if isDocOwner()
+        && preservesDocOwnership()
+        && isValidImportance(request.resource.data.importance)
+        && request.resource.data.checked is bool;
+
+      allow delete: if isDocOwner();
+    }
+
+    // Default deny
+    match /{document=**} {
+      allow read, write: if false;
+    }
+  }
+}
