@@ -71,7 +71,6 @@ export const getPreferences = async (
   let q = query(
     collection(db, COLLECTION_NAME),
     where('userId', '==', userId),
-    orderBy('updatedAt', 'desc'),
     limit(options?.maxResults || 200)
   );
 
@@ -80,6 +79,12 @@ export const getPreferences = async (
     id: docSnap.id,
     ...(docSnap.data() as Omit<Preference, 'id'>),
   }));
+
+  preferences.sort((a, b) => {
+    const aTime = (a.updatedAt as Timestamp)?.toMillis?.() || 0;
+    const bTime = (b.updatedAt as Timestamp)?.toMillis?.() || 0;
+    return bTime - aTime;
+  });
 
   if (options?.status) {
     preferences = preferences.filter(p => p.status === options.status);

@@ -64,7 +64,6 @@ export const getPlans = async (
   let q = query(
     collection(db, COLLECTION_NAME),
     where('userId', '==', userId),
-    orderBy('createdAt', 'desc'),
     limit(options?.maxResults || 100)
   );
 
@@ -73,6 +72,12 @@ export const getPlans = async (
     id: docSnap.id,
     ...(docSnap.data() as Omit<Plan, 'id'>),
   }));
+
+  plans.sort((a, b) => {
+    const aTime = (a.createdAt as Timestamp)?.toMillis?.() || 0;
+    const bTime = (b.createdAt as Timestamp)?.toMillis?.() || 0;
+    return bTime - aTime;
+  });
 
   if (options?.status) {
     plans = plans.filter(p => p.status === options.status);

@@ -70,15 +70,20 @@ export const getMemories = async (
   const q = query(
     collection(db, COLLECTION_NAME),
     where('userId', '==', userId),
-    orderBy('createdAt', 'desc'),
     limit(maxResults)
   );
 
   const snapshot = await getDocs(q);
-  return snapshot.docs.map(docSnap => ({
+  const items = snapshot.docs.map(docSnap => ({
     id: docSnap.id,
     ...(docSnap.data() as Omit<Memory, 'id'>),
   }));
+
+  return items.sort((a, b) => {
+    const aTime = (a.createdAt as Timestamp)?.toMillis?.() || 0;
+    const bTime = (b.createdAt as Timestamp)?.toMillis?.() || 0;
+    return bTime - aTime;
+  });
 };
 
 export const getMemoryById = async (
