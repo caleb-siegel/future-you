@@ -11,6 +11,7 @@ export type Category =
   | 'Lifestyle'
   | 'Purchases'
   | 'Personal Growth'
+  | 'Car'
   | 'Other';
 
 export const CATEGORIES: Category[] = [
@@ -24,6 +25,7 @@ export const CATEGORIES: Category[] = [
   'Lifestyle',
   'Purchases',
   'Personal Growth',
+  'Car',
   'Other',
 ];
 
